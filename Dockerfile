@@ -68,7 +68,11 @@ RUN	mkdir sources && \
 #
 # Creating a Limited Directory Layout in the LFS Filesystem 
 #
-RUN	mkdir -pv skeleton/{etc,var} skeleton/usr/{bin,lib,sbin}
+RUN	mkdir -pv skeleton/{etc,var} skeleton/usr/{bin,lib,sbin} && \
+	case $(uname -m) in \
+		x86_64) mkdir -v $LFS/lib64 ;; \
+	esac && \
+	mkdir -v $LFS/tools
 
 #
 # Adding the LFS User
@@ -76,7 +80,9 @@ RUN	mkdir -pv skeleton/{etc,var} skeleton/usr/{bin,lib,sbin}
 
 RUN	groupadd lfs && \
 	useradd -s /bin/bash -g lfs -m -k /dev/null lfs && \
-	echo alpine | passwd lfs --stdin
+	echo alpine | passwd lfs --stdin && \
+	echo "exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\$ ' /bin/bash" >> /home/lfs/.bash_profile && \
+	chown lfs:lfs /home/lfs/.bash_profile
 
 #
 # Start Script
@@ -85,14 +91,10 @@ RUN	groupadd lfs && \
 RUN	echo -e "#!/bin/bash \n \
 		mount -v lfs $LFS \n \
 		mv -v sources $LFS/sources \n \
-		mv -v skeleton/* . \n \
+		mv -v skeleton/* $LFS \n \
 		for i in bin lib sbin; do \n \
-			ln -sv $LFS/usr/$i $LFS/$i \n \
+			ln -sv $LFS/usr/$i $LFS/\$i \n \
 		done \n \
-		case $(uname -m) in \n \
-			x86_64) mkdir -v $LFS/lib64 ;; \n \
-		esac \n \
-		mkdir -v $LFS/tools \n \
 		chown -v lfs $LFS/{usr{,/*},lib,var,etc,bin,sbin,tools} \n \
 		case $(uname -m) in \n \
 			x86_64) chown -v lfs $LFS/lib64 ;; \n \
