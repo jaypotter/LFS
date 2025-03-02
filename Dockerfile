@@ -25,7 +25,25 @@ RUN	ln -sfv bison	/usr/bin/yacc
 # /usr/bin/awk should be a link to gawk
 RUN	ln -sfv gawk	/usr/bin/awk
 
+# Version Check
 RUN	dnf install wget -y && \
 	wget -v https://raw.githubusercontent.com/jaypotter/LFS/refs/heads/main/version-check.sh && \
 	chmod +x version-check.sh && \
 	./version-check.sh
+
+#
+# Creating a New Partition
+#
+
+RUN	dd if=/dev/zero of=lfs bs=1M count=20480 status=progress && \
+	dnf install e2fsprogs -y && \
+	mkfs.ext4 -v lfs && \
+	mkdir -v mnt
+
+#
+# Start Script
+#
+
+	echo -e "#!/bin/bash \n \
+		mount lfs mnt" >> start.sh && \
+	chmod +x start.sh
