@@ -41,9 +41,15 @@ RUN	dd if=/dev/zero of=lfs bs=1M count=20480 status=progress && \
 	mkdir -v mnt
 
 #
+# Setting The $LFS Variable
+#
+
+ENV	LFS=/root/mnt
+
+#
 # Start Script
 #
 
-	echo -e "#!/bin/bash \n \
-		mount lfs mnt" >> start.sh && \
+RUN	echo -e "#!/bin/bash \n \
+		mount lfs $LFS" >> start.sh && \
 	chmod +x start.sh
