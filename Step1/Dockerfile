@@ -70,9 +70,9 @@ RUN	mkdir sources && \
 #
 RUN	mkdir -pv skeleton/{etc,var} skeleton/usr/{bin,lib,sbin} && \
 	case $(uname -m) in \
-		x86_64) mkdir -v $LFS/lib64 ;; \
+		x86_64) mkdir -v skeleton/lib64 ;; \
 	esac && \
-	mkdir -v $LFS/tools
+	mkdir -v skeleton/tools
 
 #
 # Adding the LFS User
@@ -80,9 +80,25 @@ RUN	mkdir -pv skeleton/{etc,var} skeleton/usr/{bin,lib,sbin} && \
 
 RUN	groupadd lfs && \
 	useradd -s /bin/bash -g lfs -m -k /dev/null lfs && \
-	echo alpine | passwd lfs --stdin && \
-	echo "exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\$ ' /bin/bash" >> /home/lfs/.bash_profile && \
-	chown lfs:lfs /home/lfs/.bash_profile
+	echo alpine | passwd lfs --stdin
+
+#
+# Setting Up the Environment
+#
+
+RUN	echo "exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\$ ' /bin/bash" >> /home/lfs/.bash_profile && \
+	echo -e "set +h \n \
+		umask 022 \n \
+		LFS=/lfs/mnt \n \
+		LC_ALL=POSIX \n \
+		LFS_TGT=$(uname -m)-potter-linux-gnu \n \
+		PATH=/usr/bin \n \
+		if [ ! -L /bin ]; then PATH=/bin:$PATH; fi \n \
+		PATH=$LFS/tools/bin:$PATH \n \
+		CONFIG_SITE=$LFS/usr/share/config.site \n \
+		export LFS LC_ALL LFS_TGT PATH CONFIG_SITE \n \
+		export MAKEFLAGS=-j`nproc --ignore=2`" >> /home/lfs/.bashrc && \
+	chown lfs:lfs -R /home/lfs/
 
 #
 # Start Script
@@ -98,6 +114,5 @@ RUN	echo -e "#!/bin/bash \n \
 		chown -v lfs $LFS/{usr{,/*},lib,var,etc,bin,sbin,tools} \n \
 		case $(uname -m) in \n \
 			x86_64) chown -v lfs $LFS/lib64 ;; \n \
-		esac \n \
-		su - lfs" >> start.sh && \
+		esac" >> start.sh && \
 	chmod +x start.sh
